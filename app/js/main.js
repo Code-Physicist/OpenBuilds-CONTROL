@@ -11,13 +11,13 @@ document.addEventListener("contextmenu", function(e) {
 
 function setWindowTitle(status) {
 
-  var string = "OpenBuilds CONTROL"
+  var string = "OpenBuilds CONTROL (RRCM) Version 1.0.0"
 
-  if (status) {
+  /*if (status) {
     string += " v" + status.driver.version
   } else if (laststatus) {
     string += " v" + laststatus.driver.version
-  }
+  }*/
 
 
   if (loadedFileName.length > 0) {
