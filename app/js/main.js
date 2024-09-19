@@ -283,6 +283,10 @@ function runJobFile() {
 
 }
 
+function getGCode() {
+  barcodeDialog();
+}
+
 function readFile(evt) {
   console.group("New FileOpen Event:");
   console.log(evt);
@@ -348,6 +352,55 @@ function jobNeedsHoming() {
       }
     }
   }
+}
+
+function barcodeDialog() {
+  var dialog = Metro.dialog.create({
+    clsDialog: 'dark',
+    title: "<i class='fas fa-cube'></i> Scan Barcode",
+    content: "<div><input type='text' id='barcode_box' value=''></div><div id='barcode_msg' style='color:red;padding-left:10px;'></div>",
+    actions: [{
+      caption: "Close",
+      cls: "js-dialog-close barcode_btn",
+      onclick: function() {
+        //
+      }
+    }, {
+      caption: "OK",
+      cls: "primary barcode_btn",
+      onclick: async function() {
+        try {
+          $(".barcode_btn").prop('disabled', true);
+          let barcode = $("#barcode_box").val().trim();
+          if(barcode === "") return;
+
+          $("#barcode_msg").css("color", "black");
+          $("#barcode_msg").text("Submitting...");
+          const response = await axios.post("{Your-API-Path}", {
+            barcode:barcode
+          });
+          const blob = new Blob([response.data], { type: response.data.type });
+          var blob_file = new File([blob], 'test.gcode');
+          loadFile(blob_file);
+          Metro.dialog.close(dialog);
+        }
+        catch(error) {
+          response = error.response;
+          if(response) {
+            $("#barcode_msg").css("color", "red");
+            $("#barcode_msg").text(response.data.err_message);
+          }
+          else {
+            $("#barcode_msg").css("color", "red");
+            $("#barcode_msg").text("An unknown error occurred. Please try again.");
+          }
+        }
+        finally {
+          $(".barcode_btn").prop('disabled', false);
+        }
+      }
+    }]
+  });
 }
 
 function versionCompare(v1, v2, options) {
