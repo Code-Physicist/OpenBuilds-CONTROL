@@ -94,6 +94,14 @@ function getChangelog() {
   });
 }
 
+//MyApp parameters
+MyApp = {
+  base_url: "{Your Api URL}",
+  is_user: false,
+  u_name: "",
+  token: ""
+}
+
 $(document).ready(function() {
 
   $('#openbuildslogosplash').fadeIn(100);
@@ -283,10 +291,6 @@ function runJobFile() {
 
 }
 
-function getGCode() {
-  barcodeDialog();
-}
-
 function readFile(evt) {
   console.group("New FileOpen Event:");
   console.log(evt);
@@ -354,53 +358,127 @@ function jobNeedsHoming() {
   }
 }
 
-function barcodeDialog() {
+function loginDialog() {
   var dialog = Metro.dialog.create({
     clsDialog: 'dark',
-    title: "<i class='fas fa-cube'></i> Scan Barcode",
-    content: "<div><input type='text' id='barcode_box' value=''></div><div id='barcode_msg' style='color:red;padding-left:10px;'></div>",
+    title: "<i class='fas fa-user'></i> Login",
+    content: "<div style='margin-bottom:8px;'><div>Username</div><div><input type='text' id='user' value=''></div><div id='user_msg' style='color:red;padding-left:10px;'></div></div><div style='margin-bottom:8px;'><div>Password</div><input type='password' id='pass' value=''></div><div id='pass_msg' style='color:red;padding-left:10px;'></div></div>",
     actions: [{
       caption: "Close",
-      cls: "js-dialog-close barcode_btn",
+      cls: "js-dialog-close ok_btn",
       onclick: function() {
         //
       }
     }, {
       caption: "OK",
-      cls: "primary barcode_btn",
+      cls: "primary ok_btn",
       onclick: async function() {
         try {
-          $(".barcode_btn").prop('disabled', true);
-          let barcode = $("#barcode_box").val().trim();
-          if(barcode === "") return;
+          $(".ok_btn").prop('disabled', true);
+          let username = $("#user").val().trim();
+          let password = $("#pass").val().trim();
 
-          $("#barcode_msg").css("color", "black");
-          $("#barcode_msg").text("Submitting...");
-          const response = await axios.post("{Your-API-Path}", {
-            barcode:barcode
+          const response = await axios.post(`${MyApp.base_url}/api/login`, {
+            username:username, password:password, opn_id: "M01"
           });
-          const blob = new Blob([response.data], { type: response.data.type });
-          var blob_file = new File([blob], 'test.gcode');
-          loadFile(blob_file);
+
+          MyApp.is_user = true;
+          MyApp.token = response.data.token;
+          MyApp.u_name = response.data.u_name;
+          refreshJobs();
           Metro.dialog.close(dialog);
         }
         catch(error) {
           response = error.response;
           if(response) {
-            $("#barcode_msg").css("color", "red");
-            $("#barcode_msg").text(response.data.err_message);
+            console.log(response.data.err_message);
           }
           else {
-            $("#barcode_msg").css("color", "red");
-            $("#barcode_msg").text("An unknown error occurred. Please try again.");
+            console.log("An unknown error occurred. Please try again.");
           }
         }
         finally {
-          $(".barcode_btn").prop('disabled', false);
+          $(".ok_btn").prop('disabled', false);
         }
       }
     }]
   });
+}
+
+async function refreshJobs() {
+  try {
+    const response = await axios.post(`${MyApp.base_url}/api/get_cam_jobs`, {
+      token: MyApp.token, opn_id: "M01", is_operator: true, status: -1
+    });
+    $('#job-table').DataTable().destroy();
+    let jobs = response.data.data_list;
+    
+    let table_str = "";
+    for(let i = 0; i < jobs.length; i++) {
+      let job = jobs[i];
+      table_str += "<tr>";
+      table_str += `<td>${job.id}</td>`;
+      table_str += `<td>${job.priority}</td>`;
+      table_str += `<td>${job.number}</td>`;
+      table_str += `<td><button type="button" class="primary" onclick="showJobData(${job.id}, '${job.pt_hn}', ${job.p_site_id});">Show</button></td>`;
+      table_str += "</tr>";
+    }
+    $('#job-table-body').html(table_str);
+
+    $('#job-table').DataTable({lengthChange: false, searching: false, pageLength: 5});
+  }
+  catch(error) {
+    console.log(error);
+  }
+}
+
+async function showJobData(job_id, pt_hn, p_site_id) {
+  try {
+    const response = await axios.post(`${MyApp.base_url}/api/show_cam_job`, {
+      token: MyApp.token, opn_id: "M01", job_id: job_id, pt_hn: pt_hn, p_site_id: p_site_id
+    });
+
+    $("#job-container").css("display", "none");
+    $("#job-data-container").css("display", "block");
+
+    $('#data-table').DataTable().destroy();
+    let file_infos = response.data.file_infos["post_cads"];
+    console.log(file_infos);
+    let table_str = "";
+    for(let i = 0; i < file_infos.length; i++)
+    {
+      let file_info = file_infos[i];
+      if(file_info.info === null)
+        continue;
+
+      table_str += "<tr>";
+      table_str += `<td>${file_info.id}</td>`;
+      table_str += `<td>No Comment</td>`;
+      table_str += `<td><button type="button" class="primary" onclick="downloadGCode('${file_info.info.prefix}', '${file_info.info.file_name}');">Download</button></td>`;
+      table_str += "</tr>";
+    }
+
+    $('#data-table-body').html(table_str);
+    $('#data-table').DataTable({lengthChange: false, searching: false, pageLength: 5});
+    
+  }
+  catch(error) {
+    console.log(error);
+  }
+}
+
+async function downloadGCode(prefix, file_name) {
+  try {
+    response = await axios.post(`${MyApp.base_url}/api/download_gcode`, {"token":MyApp.token, "opn_id": "M01", "file_path": `${prefix}${file_name}`}, {responseType: 'blob'})
+    
+    // Create a new Blob object using the response data
+    const blob = new Blob([response.data], { type: response.data.type });
+    var blob_file = new File([blob], file_name);
+    loadFile(blob_file);
+  }
+  catch(error) {
+    console.log(error);
+  }
 }
 
 function versionCompare(v1, v2, options) {

@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="metro4:init" content="true">
     <script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
+    <link rel="stylesheet" href="lib/datatable/datatables.css" />
     <link rel="stylesheet" href="lib/metro4/css/metro-all.min.css" />
     <link rel="stylesheet" href="css/main.css" />
     <link rel="stylesheet" href="css/buttons.css" />
@@ -329,7 +330,7 @@
                     <span class="caption">Open<br>G-CODE</span>
                   </button>
                   <ul class="ribbon-dropdown" data-role="dropdown" data-duration="100">
-                    <li class="" onclick="getGCode();"><a href="#"><img width="16" src="img/openbuilds.svg"> SCAN Barcode</a></li>
+                    <li class="" onclick="loginDialog();"><a href="#"><img width="16" src="img/openbuilds.svg"> Login</a></li>
                     <!--li class="divider fg-gray"></li-->
                     <li class="btn-file"><a href="#"><input class="btn-file" id="file" type="file" accept=".gcode, .gc, .tap, .nc, .cnc" /><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a>
                     </li>
@@ -349,7 +350,7 @@
                     <span class="caption">Open<br>G-CODE</span>
                   </button>
                   <ul class="ribbon-dropdown" data-role="dropdown" data-duration="100">
-                    <li class="" onclick="getGCode();"><a href="#"><img width="16" src="img/openbuilds.svg"> SCAN Barcode</a></li>
+                    <li class="" onclick="loginDialog();"><a href="#"><img width="16" src="img/openbuilds.svg"> Login</a></li>
                     <!--li class="divider fg-gray"></li-->
                     <li class="btn-file" onclick="socket.emit('openFile')"><a href="#"><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a> </li>
 
@@ -1110,8 +1111,9 @@
                 <ul class="tabs-holder">
                   <li><a href="#tab-three" id="gcodeviewertab" onclick="fixRenderSize();"><i class="mif-3d-rotation fa-fw fg-darkCobalt" id="3dviewicon"></i><span id="3dviewlabel"> 3D View</span></a></li>
                   <li><a href="#tab-one" id="consoletab"><i class="fas fa-fw fa-terminal fg-darkGreen"></i> Log / Serial Console</a></li>
-                  <li id="macro_tab" style="visibility: hidden;"><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
-                  <li id="gcode_tab" style="visibility: hidden;"><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> GCODE Editor</a></li>
+                  <li id="macro_tab"><a href="#tab-four" id="macrostab"><i class="fas fa-th fa-fw fg-darkOrange"></i> Macros</a></li>
+                  <li id="gcode_tab"><a href="#tab-two" id="gcodeeditortab"><i class="far fa-fw fa-edit fg-darkLime"></i> GCODE Editor</a></li>
+                  <li id="cam_tab"><a href="#tab-five" id="camtab"><i class="far fa-fw fa-file fg-darkLime"></i> CAM Jobs</a></li>
                 </ul>
 
                 <div class="content-holder">
@@ -1166,6 +1168,37 @@
                   </div>
                   <div class="section" id="tab-four">
                     <div id="macros"></div>
+                  </div>
+                  <div class="section" id="tab-five" style="background-color: white;">
+                    <div class="h-vh-100" style="width:50%;margin:0 auto;overflow-y: auto;">
+                      <div id="job-container">
+                        <table id="job-table" style="width:100%">
+                          <thead>
+                              <tr>
+                                  <th>Job ID</th>
+                                  <th>Priority</th>
+                                  <th>Quantity</th>
+                                  <th>Action</th>
+                              </tr>
+                          </thead>
+                          <tbody id="job-table-body">
+                          </tbody>
+                        </table>
+                      </div>
+                      <div id="job-data-container" style="display:none;">
+                        <table id="data-table" style="width:100%">
+                          <thead>
+                              <tr>
+                                  <th>G-CODE</th>
+                                  <th>Note</th>
+                                  <th>Action</th>
+                              </tr>
+                          </thead>
+                          <tbody id="data-table-body">
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </nav>
@@ -1883,6 +1916,7 @@
   <script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
   <script type="text/javascript" src="lib/jquery/jquery-ui.js"></script>
   <script type="text/javascript" src="lib/jquery/jquery-input-history.min.js"></script>
+  <script type="text/javascript" src="lib/datatable/datatables.min.js"></script>
 
   <!-- Theme  -->
   <script type="text/javascript" src="js/theme.js"></script>
