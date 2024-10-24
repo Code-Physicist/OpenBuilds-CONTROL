@@ -96,10 +96,19 @@ function getChangelog() {
 
 //MyApp parameters
 MyApp = {
-  base_url: "{Your Api URL}",
+  base_url: "{Your API URL}",
   is_user: false,
   u_name: "",
-  token: ""
+  token: "",
+  is_busy: false,
+  job_id: 0,
+  pt_hn: "",
+  p_site_id: 0,
+  file_id: "",
+  priority_dict: {
+    1 : "ปกติ",
+    2 : "เร่งด่วน"
+  }
 }
 
 $(document).ready(function() {
@@ -240,7 +249,7 @@ $(document).ready(function() {
 
 });
 
-function runJobFile() {
+function runJobFile() {  
   if (gcode) {
     var formData = new FormData();
     var blob = new Blob([gcode], {
@@ -330,7 +339,8 @@ function loadFile(f) {
         printLog(`<span class="fg-red">[ GCODE Parser ]</span><span class='fg-darkGray'> GCODE File Loaded </span>`);
       }
       parseGcodeInWebWorker(this.result)
-      jobNeedsHoming();
+      //jobNeedsHoming();
+      runJobFile();
     };
     // }
   }
@@ -384,7 +394,8 @@ function loginDialog() {
 
           MyApp.is_user = true;
           MyApp.token = response.data.token;
-          MyApp.u_name = response.data.u_name;
+          $("#u_name").text(response.data.u_name);
+          $("#user_info").css("display", "block");
           refreshJobs();
           Metro.dialog.close(dialog);
         }
@@ -405,8 +416,17 @@ function loginDialog() {
   });
 }
 
+function logout() {
+  MyApp.token = "";
+  $("#user_info").css("display", "none");
+  $("#job-container").css("display", "none");
+  $("#job-data-container").css("display", "none");
+}
+
 async function refreshJobs() {
   try {
+    $("#job-container").css("display", "none");
+
     const response = await axios.post(`${MyApp.base_url}/api/get_cam_jobs`, {
       token: MyApp.token, opn_id: "M01", is_operator: true, status: -1
     });
@@ -417,46 +437,62 @@ async function refreshJobs() {
     for(let i = 0; i < jobs.length; i++) {
       let job = jobs[i];
       table_str += "<tr>";
-      table_str += `<td>${job.id}</td>`;
-      table_str += `<td>${job.priority}</td>`;
-      table_str += `<td>${job.number}</td>`;
-      table_str += `<td><button type="button" class="primary" onclick="showJobData(${job.id}, '${job.pt_hn}', ${job.p_site_id});">Show</button></td>`;
+      table_str += `<td class="text-left">${job.id.toString().padStart(5, '0')}</td>`;
+      table_str += `<td class="text-left">${MyApp.priority_dict[job.priority]}</td>`;
+      table_str += `<td class="text-left">${job.number}</td>`;
+      table_str += `<td class="text-center"><button type="button" class="button small primary" onclick="showJobData(${job.id}, '${job.pt_hn}', ${job.p_site_id});">Show</button></td>`;
       table_str += "</tr>";
     }
     $('#job-table-body').html(table_str);
+    $("#job_num").text(jobs.length);
 
     $('#job-table').DataTable({lengthChange: false, searching: false, pageLength: 5});
   }
   catch(error) {
     console.log(error);
   }
+  finally {
+    $("#job-container").css("display", "block");
+  }
 }
 
-async function showJobData(job_id, pt_hn, p_site_id) {
+function showJobData(job_id, pt_hn, p_site_id) {
+  $("#job-container").css("display", "none");
+  $("#job-data-container").css("display", "none");
+  loadJobData(job_id, pt_hn, p_site_id);
+}
+
+async function loadJobData(job_id, pt_hn, p_site_id) {
+  MyApp.job_id = job_id;
+  MyApp.pt_hn = pt_hn;
+  MyApp.p_site_id = p_site_id;
+
   try {
     const response = await axios.post(`${MyApp.base_url}/api/show_cam_job`, {
       token: MyApp.token, opn_id: "M01", job_id: job_id, pt_hn: pt_hn, p_site_id: p_site_id
     });
 
-    $("#job-container").css("display", "none");
-    $("#job-data-container").css("display", "block");
-
     $('#data-table').DataTable().destroy();
     let file_infos = response.data.file_infos["post_cads"];
-    console.log(file_infos);
+    let job_data = response.data.job_data;
     let table_str = "";
+    let file_num = 0;
     for(let i = 0; i < file_infos.length; i++)
     {
       let file_info = file_infos[i];
       if(file_info.info === null)
         continue;
 
+      file_num++;
       table_str += "<tr>";
-      table_str += `<td>${file_info.id}</td>`;
-      table_str += `<td>No Comment</td>`;
-      table_str += `<td><button type="button" class="primary" onclick="downloadGCode('${file_info.info.prefix}', '${file_info.info.file_name}');">Download</button></td>`;
+      table_str += `<td class="text-left">${file_info.id}</td>`;
+      table_str += `<td class="text-left">No Comment</td>`;
+      table_str += `<td class="text-left">${job_data[file_info.id]}</td>`;
+      table_str += `<td class="text-center"><button type="button" class="button small primary" onclick="downloadGCode('${file_info.info.prefix}', '${file_info.info.file_name}');">Run</button></td>`;
       table_str += "</tr>";
     }
+
+    $('#file_num').html(file_num);
 
     $('#data-table-body').html(table_str);
     $('#data-table').DataTable({lengthChange: false, searching: false, pageLength: 5});
@@ -465,9 +501,22 @@ async function showJobData(job_id, pt_hn, p_site_id) {
   catch(error) {
     console.log(error);
   }
+  finally {
+    $("#job-data-container").css("display", "block");
+  }
+}
+
+function goBack() {
+  $("#job-container").css("display", "block");
+  $("#job-data-container").css("display", "none");
+  refreshJobs();
 }
 
 async function downloadGCode(prefix, file_name) {
+  if(MyApp.is_busy) return;
+  MyApp.is_busy = true;
+  MyApp.file_id = file_name.substring(0, file_name.lastIndexOf("."));;
+
   try {
     response = await axios.post(`${MyApp.base_url}/api/download_gcode`, {"token":MyApp.token, "opn_id": "M01", "file_path": `${prefix}${file_name}`}, {responseType: 'blob'})
     
@@ -475,6 +524,20 @@ async function downloadGCode(prefix, file_name) {
     const blob = new Blob([response.data], { type: response.data.type });
     var blob_file = new File([blob], file_name);
     loadFile(blob_file);
+  }
+  catch(error) {
+    console.log(error);
+  }
+  finally {
+    MyApp.is_busy = false;
+  }
+}
+
+async function sendJobComplete() {
+  if(MyApp.file_id === "") return;
+  try {
+    response = await axios.post(`${MyApp.base_url}/api/update_cam_data`, {"job_id": MyApp.job_id, "opn_id": "M01", "file_id": MyApp.file_id});
+    showJobData(MyApp.job_id, MyApp.pt_hn, MyApp.p_site_id);
   }
   catch(error) {
     console.log(error);

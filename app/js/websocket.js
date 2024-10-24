@@ -156,6 +156,10 @@ function initSocket() {
     }
   })
 
+  socket.on('mgcode', function(data) {
+    MyApp.file_id = "";
+  });
+
   socket.on('gcodeupload', function(data) {
     var icon = ''
     var source = "api"
@@ -365,6 +369,8 @@ function initSocket() {
       $('#timeRemaining').html("DONE: " + msToTime(runTime));
     }
 
+    sendJobComplete();
+    
     // Focus Button
     setTimeout(function() {
       $('#jobCompleteBtnOk').focus();

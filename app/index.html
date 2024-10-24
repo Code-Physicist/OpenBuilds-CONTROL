@@ -16,6 +16,11 @@
     <link rel="stylesheet" href="css/probev2.css" />
     <link rel="stylesheet" href="css/splash.css" />
     <link rel="stylesheet" href="/lib/furcanIconPicker/iconpicker-1.5.0.css" />
+    <style>
+      div.dt-container div.dt-layout-row {    
+        margin: 0 0 0.75em 0;
+      }
+    </style>
   </head>
 
   <body>
@@ -352,7 +357,7 @@
                   <ul class="ribbon-dropdown" data-role="dropdown" data-duration="100">
                     <li class="" onclick="loginDialog();"><a href="#"><img width="16" src="img/openbuilds.svg"> Login</a></li>
                     <!--li class="divider fg-gray"></li-->
-                    <li class="btn-file" onclick="socket.emit('openFile')"><a href="#"><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a> </li>
+                    <li class="btn-file" onclick="socket.emit('openFile');"><a href="#"><i class="far fa-folder-open fa-fw"></i> <b>Open GCODE</b> from File (*.gcode, *.gc, *.tap, *.nc, *.cnc)</a> </li>
 
                     <!--li class="" onclick="socket.emit('opencam', true);"><a href="#"><img width="16" src="img/openbuilds.svg"> OpenBuilds CAM</a></li>
                     <li class="" onclick="socket.emit('lightburn', true);"><a href="#"><img width="16" src="affiliates/lightburn/lightburn.png"> Lightburn</a></li>
@@ -1170,15 +1175,25 @@
                     <div id="macros"></div>
                   </div>
                   <div class="section" id="tab-five" style="background-color: white;">
-                    <div class="h-vh-100" style="width:50%;margin:0 auto;overflow-y: auto;">
-                      <div id="job-container">
-                        <table id="job-table" style="width:100%">
+                    <div class="h-vh-100" style="width:5%;overflow-y: auto;display: inline-block;">
+                      &nbsp;
+                    </div>
+                    <div class="h-vh-100" style="width:20%;overflow-y: auto;display: inline-block;">
+                      <div id="user_info" style="display:none;">
+                        <div class="text-left">ผู้ดำเนินงาน:</div>
+                        <div class="text-left"><span id="u_name"></span> <button type="button" class="button small" onclick="logout();">Logout</button></div>
+                      </div>
+                    </div>
+                    <div class="h-vh-100" style="width:50%;overflow-y: auto;display: inline-block;">
+                      <div id="job-container" style="display: none;">
+                        <div class="text-left">จำนวน <span id="job_num">0</span> งาน</div>
+                        <table id="job-table" style="width:100%;">
                           <thead>
                               <tr>
-                                  <th>Job ID</th>
-                                  <th>Priority</th>
-                                  <th>Quantity</th>
-                                  <th>Action</th>
+                                  <th class="text-left">Job ID</th>
+                                  <th class="text-left">ความสำคัญ</th>
+                                  <th class="text-left">จำนวน</th>
+                                  <th class="text-center">Action</th>
                               </tr>
                           </thead>
                           <tbody id="job-table-body">
@@ -1186,12 +1201,14 @@
                         </table>
                       </div>
                       <div id="job-data-container" style="display:none;">
+                        <div class="text-left">จำนวน <span id="file_num">0</span> ไฟล์ <button type="button small" class="button small" onclick="goBack();">Go Back</button></div>
                         <table id="data-table" style="width:100%">
                           <thead>
                               <tr>
-                                  <th>G-CODE</th>
-                                  <th>Note</th>
-                                  <th>Action</th>
+                                  <th class="text-left">G-CODE</th>
+                                  <th class="text-left">หมายเหตุ</th>
+                                  <th class="text-left">จำนวนการกัด</th>
+                                  <th class="text-center">Action</th>
                               </tr>
                           </thead>
                           <tbody id="data-table-body">

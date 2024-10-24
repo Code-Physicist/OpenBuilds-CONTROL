@@ -2280,6 +2280,9 @@ function readFile(filePath) {
             uploadedgcode = "";
           }
           if (data) {
+            //Emit manual gcode selection
+            io.sockets.emit('mgcode', true);
+            
             if (filePath.endsWith('.obc')) { // OpenBuildsCAM Workspace
               uploadedworkspace = data;
               const {
