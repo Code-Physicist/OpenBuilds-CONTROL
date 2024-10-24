@@ -426,6 +426,7 @@ function logout() {
 async function refreshJobs() {
   try {
     $("#job-container").css("display", "none");
+    $("#job-data-container").css("display", "none");
 
     const response = await axios.post(`${MyApp.base_url}/api/get_cam_jobs`, {
       token: MyApp.token, opn_id: "M01", is_operator: true, status: -1
@@ -436,6 +437,7 @@ async function refreshJobs() {
     let table_str = "";
     for(let i = 0; i < jobs.length; i++) {
       let job = jobs[i];
+      if(job.status === 3) continue;
       table_str += "<tr>";
       table_str += `<td class="text-left">${job.id.toString().padStart(5, '0')}</td>`;
       table_str += `<td class="text-left">${MyApp.priority_dict[job.priority]}</td>`;
@@ -476,14 +478,12 @@ async function loadJobData(job_id, pt_hn, p_site_id) {
     let file_infos = response.data.file_infos["post_cads"];
     let job_data = response.data.job_data;
     let table_str = "";
-    let file_num = 0;
     for(let i = 0; i < file_infos.length; i++)
     {
       let file_info = file_infos[i];
       if(file_info.info === null)
         continue;
 
-      file_num++;
       table_str += "<tr>";
       table_str += `<td class="text-left">${file_info.id}</td>`;
       table_str += `<td class="text-left">No Comment</td>`;
@@ -491,8 +491,6 @@ async function loadJobData(job_id, pt_hn, p_site_id) {
       table_str += `<td class="text-center"><button type="button" class="button small primary" onclick="downloadGCode('${file_info.info.prefix}', '${file_info.info.file_name}');">Run</button></td>`;
       table_str += "</tr>";
     }
-
-    $('#file_num').html(file_num);
 
     $('#data-table-body').html(table_str);
     $('#data-table').DataTable({lengthChange: false, searching: false, pageLength: 5});
@@ -541,6 +539,21 @@ async function sendJobComplete() {
   }
   catch(error) {
     console.log(error);
+  }
+}
+
+async function submitJob() {
+  if(MyApp.is_busy) return;
+  MyApp.is_busy = true;
+  try {
+    response = await axios.post(`${MyApp.base_url}/api/submit_cam_job`, {"token":MyApp.token, "job_id": MyApp.job_id, "opn_id": "M01", "pt_hn": MyApp.pt_hn});
+    refreshJobs();
+  }
+  catch(error) {
+    console.log(error);
+  }
+  finally {
+    MyApp.is_busy = false;
   }
 }
 
